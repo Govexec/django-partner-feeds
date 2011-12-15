@@ -35,6 +35,8 @@ def update_posts_for_feed(partner):
 			p.partner_id = partner.id
 			p.title = entry.title
 
+			p.subheader = entry.summary
+
 			try:
 				p.guid = entry.id
 			except AttributeError:
