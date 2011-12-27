@@ -1,5 +1,5 @@
 from django.contrib import admin
-from partner_feeds.models import Partner, Post
+from partner_feeds.models import Partner, Post, PartnerGroup
 from settings import STATIC_URL
 
 class PartnerAdmin(admin.ModelAdmin):
@@ -18,5 +18,14 @@ class PostAdmin(admin.ModelAdmin):
 	list_display = ['title', 'date', 'partner',]
 	ordering = ['-date']
 
+class PartnerGroupAdmin(admin.ModelAdmin):
+    list_display = ['title', 'slug', 'primary_category']
+
+    filter_horizontal = ['partners',]
+
+    prepopulated_fields = {"slug": ('title',)}
+
+    
 admin.site.register(Partner, PartnerAdmin)
 admin.site.register(Post, PostAdmin)
+admin.site.register(PartnerGroup, PartnerGroupAdmin)

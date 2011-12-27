@@ -3,6 +3,8 @@ from django.db import models
 from partner_feeds import tasks
 from django.template.defaultfilters import slugify
 
+from categories.models import Category
+
 # If we can import caching (IE, CacheMachine is installed) then use it
 try:
 	from caching.base import CachingManager, CachingMixin
@@ -14,10 +16,20 @@ try:
 		class Meta:
 			abstract = True
 
+	class BaseManager(CachingManager):
+
+		class Meta:
+			abstract = True
+
 # Otherwise, just use the standard Django model without a mixin
 except ImportError:
 	class BaseModel(models.Model):
 		""" Base class WITHOUT Cache Machine caching """
+		class Meta:
+			abstract = True
+
+	class BaseManager(models.Manager):
+        
 		class Meta:
 			abstract = True
 
@@ -59,10 +71,17 @@ class Partner(BaseModel):
 		super(Partner, self).save(*args, **kwargs)
 		tasks.update_posts_for_feed.apply_async([self, ])
 
+
+class PostManager(BaseManager):
+    def get_posts_by_partner_group(self, slug):
+        return Post.objects.filter(partner__partnergroup__slug=slug).order_by("-date")
+
 class Post(BaseModel):
 	"""
 	Post retrieved from syndicated RSS or ATOM feed
 	"""
+
+	objects = PostManager()
 
 	partner = models.ForeignKey(Partner)
 
@@ -97,3 +116,23 @@ class Post(BaseModel):
 
 	class Meta:
 		ordering = ('-date', )
+
+class PartnerGroup(BaseModel):
+    '''
+    Group of partner feeds to be displayed together (e.g. Earlybird)
+    '''
+
+    title = models.CharField(max_length=255)
+
+    slug = models.SlugField(
+        max_length=255,
+        help_text='System uses this to lookup group, based on title',
+        null=False)
+
+    primary_category = models.ForeignKey(Category)
+
+    partners = models.ManyToManyField(Partner)
+
+    meta_description = models.CharField(max_length=160)
+
+    meta_keywords = models.CharField(max_length=160)
