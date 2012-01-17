@@ -36,6 +36,11 @@ def update_posts_for_feed(partner):
 			p.title = entry.title
 
 			p.subheader = entry.summary
+			
+			try:
+				p.author = entry.author
+			except AttributeError:
+				pass
 
 			try:
 				p.guid = entry.id

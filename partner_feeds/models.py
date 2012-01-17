@@ -88,6 +88,8 @@ class Post(BaseModel):
 	title = models.CharField(max_length=255)
 
 	subheader = models.TextField()
+	
+	author = models.CharField(max_length=255, default="")
 
 	url = models.URLField(verify_exists=False)
 
