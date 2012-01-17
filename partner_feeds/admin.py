@@ -17,6 +17,7 @@ class PostAdmin(admin.ModelAdmin):
 
 	list_display = ['title', 'date', 'partner',]
 	ordering = ['-date']
+	list_filter = ('partner',)
 
 class PartnerGroupAdmin(admin.ModelAdmin):
     list_display = ['title', 'slug', 'primary_category']
