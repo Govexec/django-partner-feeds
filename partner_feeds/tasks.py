@@ -67,7 +67,9 @@ def update_posts_for_feed_task(partner):
 				p.date = entry_date
 			except AttributeError:
 				p.date =  time.strftime("%Y-%m-%d %H:%M:%S",feed.date)
-
+			except ValueError:
+				# added ValueError to expection due: Unexpected character (while parsing date 'Wed, 25 Jan 2012 24:11:50 EST')
+				p.date =  time.strftime("%Y-%m-%d %H:%M:%S",feed.date)
 			p.save()
 		except AttributeError:
 			# needs logging
