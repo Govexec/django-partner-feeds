@@ -41,12 +41,12 @@ except AttributeError:
 
 class Partner(BaseModel):
 	"""
-	The partner who's RSS or ATOM formated content we want to retrieve and save in the database
+	The partner who's RSS or ATOM formatted content we want to retrieve and save in the database
 	"""
 
 	logo = models.ImageField(upload_to=PARTNERS_UPLOAD_PATH, blank=True)
 
-	name = models.CharField(max_length=75)
+	name = models.CharField(max_length=75, db_index=True)
 
 	url  = models.URLField('URL', help_text='Partner Website')
 
