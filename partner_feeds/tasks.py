@@ -1,4 +1,4 @@
-from celery.decorators import task
+from celery.task import task
 
 @task(ignore_result=True)
 def update_all_partner_posts():
