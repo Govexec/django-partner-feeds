@@ -1,28 +1,28 @@
-from celery.task import task
 
-@task(ignore_result=True)
 def update_all_partner_posts():
-	return update_all_partner_posts_task(celery=True)
+	return update_all_partner_posts_task()
 	
-def update_all_partner_posts_task(celery=True):
+def update_all_partner_posts_task():
 	"""
 	Fetch all partners, and for each one, pass the feed_url to update_posts_for_feed
 	"""
 	from partner_feeds.models import Partner
 	from datetime import datetime
+	from content_utils.utils import expire_cache_by_path
 
 	partners = Partner.objects.all()
 	for partner in partners:
 		# find all the posts in the current partner feeds and update them
-		if celery:
-			update_posts_for_feed.delay(partner)
-		else:
-			update_posts_for_feed(partner)
+		update_posts_for_feed(partner)
 			
 		# Set the current time as when the partner feed was last retrieved
 		Partner.objects.filter(pk=partner.pk).update(date_feed_updated=datetime.now())
-		
-@task(ignore_result=True)
+
+	# clear home page cache
+	# TODO only clear cache if there is a change
+	expire_cache_by_path('/', is_view=False)
+
+
 def update_posts_for_feed(partner):
 	return update_posts_for_feed_task(partner)
 	
@@ -73,11 +73,10 @@ def update_posts_for_feed_task(partner):
 			# A catch all for errors so that the feed parsing does not break due to bad data
 			pass
 
-@task(ignore_result=True)
 def delete_old_posts(num_posts_to_keep=20):
-	return delete_old_posts(num_posts_to_keep=20, celery=True)
+	return delete_old_posts(num_posts_to_keep=20)
 	
-def delete_old_posts(num_posts_to_keep=20, celery=True):
+def delete_old_posts(num_posts_to_keep=20):
 	""" 
 	Fetch all partners, and for each partner,
 	delete all but `num_posts_to_keep` number of posts
@@ -87,12 +86,8 @@ def delete_old_posts(num_posts_to_keep=20, celery=True):
 	partners = Partner.objects.all()
 	
 	for partner in partners:
-		if celery: 
-			delete_old_posts_for_partner.delay(partner, num_posts_to_keep)
-		else:
-			delete_old_posts_for_partner(partner, num_posts_to_keep)
-			
-@task(ignore_result=True)
+		delete_old_posts_for_partner(partner, num_posts_to_keep)
+
 def delete_old_posts_for_partner(partner, num_posts_to_keep=20):
 	"""
 	Deletes all posts except for the most recent `num_posts_to_keep`
