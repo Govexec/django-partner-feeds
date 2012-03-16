@@ -10,17 +10,25 @@ def update_all_partner_posts_task():
 	from datetime import datetime
 	from content_utils.utils import expire_cache_by_path
 
+	number_of_new_posts = 0
+
 	partners = Partner.objects.all()
 	for partner in partners:
 		# find all the posts in the current partner feeds and update them
-		update_posts_for_feed(partner)
-			
+		post_count = update_posts_for_feed(partner)
+		number_of_new_posts = number_of_new_posts + post_count
 		# Set the current time as when the partner feed was last retrieved
 		Partner.objects.filter(pk=partner.pk).update(date_feed_updated=datetime.now())
 
-	# clear home page cache
-	# TODO only clear cache if there is a change
-	expire_cache_by_path('/', is_view=False)
+	# clear home and early bird page cache and delete old posts if there is a change
+	if number_of_new_posts > 0:
+		expire_cache_by_path('/', is_view=False)
+		expire_cache_by_path('/news/earlybird/', is_view=False)
+		# set num_posts_to_keep to a high number to prevent clearing of active posts
+		# that are then re-entered on next update
+		delete_old_posts(num_posts_to_keep=100)
+
+
 
 
 def update_posts_for_feed(partner):
@@ -33,8 +41,10 @@ def update_posts_for_feed_task(partner):
 	"""
 	from feedparser import parse
 	from partner_feeds.models import Post
+	from django.core.exceptions import ObjectDoesNotExist
 	import timelib, re, time
 
+	number_of_new_posts = 0
 	feed = parse(partner.feed_url)
 
 	for entry in feed.entries:
@@ -56,26 +66,32 @@ def update_posts_for_feed_task(partner):
 			except AttributeError:
 				p.guid = entry.link
 
-			p.url = entry.link
-
-			# try to get the date of the entry, otherwise, try the date of the feed
+			# try and select feed post to see if entry exists first
 			try:
-				entry_date = re.sub('\|','', entry.date)
-				entry_date = timelib.strtotime(entry_date) # convert to a timestamp
-				entry_date = time.localtime(entry_date) # converts to a time.struct_time (with regards to local timezone)
-				entry_date = time.strftime("%Y-%m-%d %H:%M:%S", entry_date) # converts to mysql date format
-				p.date = entry_date
-			except AttributeError:
-				p.date =  time.strftime("%Y-%m-%d %H:%M:%S",feed.date)
-			p.save()
+				Post.objects.get(guid=p.guid)
+			except ObjectDoesNotExist:
+
+				p.url = entry.link
+
+				# try to get the date of the entry, otherwise, try the date of the feed
+				try:
+					entry_date = re.sub('\|','', entry.date)
+					entry_date = timelib.strtotime(entry_date) # convert to a timestamp
+					entry_date = time.localtime(entry_date) # converts to a time.struct_time (with regards to local timezone)
+					entry_date = time.strftime("%Y-%m-%d %H:%M:%S", entry_date) # converts to mysql date format
+					p.date = entry_date
+				except AttributeError:
+					p.date =  time.strftime("%Y-%m-%d %H:%M:%S",feed.date)
+				p.save()
+				number_of_new_posts = number_of_new_posts + 1
 		except Exception:
 			# TODO add sentry logging here
 			# A catch all for errors so that the feed parsing does not break due to bad data
 			pass
+	# return number of added posts
+	return number_of_new_posts
 
-def delete_old_posts(num_posts_to_keep=20):
-	return delete_old_posts(num_posts_to_keep=20)
-	
+
 def delete_old_posts(num_posts_to_keep=20):
 	""" 
 	Fetch all partners, and for each partner,
