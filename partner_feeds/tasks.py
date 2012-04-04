@@ -71,7 +71,7 @@ def update_posts_for_feed_task(partner):
 				entry_date = time.strftime("%Y-%m-%d %H:%M:%S", entry_date) # converts to mysql date format
 				p.date = entry_date
 			except AttributeError:
-				p.date =  time.strftime("%Y-%m-%d %H:%M:%S",feed.date)
+				p.date =  time.strftime("%Y-%m-%d %H:%M:%S", feed.date)
 
 			p.save()
 		except AttributeError:

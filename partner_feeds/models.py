@@ -71,6 +71,8 @@ class Partner(BaseModel):
 		super(Partner, self).save(*args, **kwargs)
 		if hasattr(tasks.update_posts_for_feed, "apply_async"):
 			tasks.update_posts_for_feed.apply_async([self, ])
+		else:
+			tasks.update_posts_for_feed_task(self)
 
 
 class PostManager(BaseManager):
