@@ -69,7 +69,10 @@ class Partner(BaseModel):
 		When saving a parter update it's related posts as an asynchronous Celery task
 		"""
 		super(Partner, self).save(*args, **kwargs)
-		tasks.update_posts_for_feed.apply_async([self, ])
+		if hasattr(tasks.update_posts_for_feed, "apply_async"):
+			tasks.update_posts_for_feed.apply_async([self, ])
+		else:
+			tasks.update_posts_for_feed_task(self)
 
 
 class PostManager(BaseManager):
