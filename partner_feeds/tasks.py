@@ -6,8 +6,8 @@ except ImportError:
 
 
 @task(ignore_result=True)
-def update_all_partner_posts():
-	return update_all_partner_posts_task(celery=True)
+def update_all_partner_posts(celery=True):
+	return update_all_partner_posts_task(celery=celery)
 	
 def update_all_partner_posts_task(celery=True):
 	"""
