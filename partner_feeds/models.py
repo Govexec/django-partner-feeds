@@ -76,8 +76,13 @@ class Partner(BaseModel):
 
 
 class PostManager(BaseManager):
-    def get_posts_by_partner_group(self, slug):
-        return Post.objects.filter(partner__partnergroup__slug=slug).order_by("-date")
+	def get_posts_by_partner_group(self, slug, use_hint=False):
+		if use_hint:
+			return Post.objects.filter(partner__partnergroup__slug=slug).\
+            with_hints(hints=({'model':Post, 'hint':'partner_feeds_post_date'},)).\
+            order_by("-date")
+		else:
+			return Post.objects.filter(partner__partnergroup__slug=slug).order_by("-date")
 
 class Post(BaseModel):
 	"""
