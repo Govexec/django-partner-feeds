@@ -79,9 +79,6 @@ def update_posts_for_feed_task(partner):
 			pass
 
 @task(ignore_result=True)
-def delete_old_posts(num_posts_to_keep=20):
-	return delete_old_posts(num_posts_to_keep=20, celery=True)
-	
 def delete_old_posts(num_posts_to_keep=20, celery=True):
 	""" 
 	Fetch all partners, and for each partner,
