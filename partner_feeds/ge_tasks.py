@@ -26,9 +26,9 @@ def update_all_partner_posts_task():
 		expire_cache_by_path('/', is_view=False)
 		expire_cache_by_path('/news/earlybird/', is_view=False)
 		try:
-			""" clear the NG cache by making a HTTP request to a view the clears the page cache """
+			""" clear the NG Homepage cache by making a HTTP request to a view the clears the page cache by path """
 			if not settings.DEBUG and settings.SITE_URL == 'http://www.govexec.com/':
-				json_data = urllib.urlopen('http://apps1.ngprod.amc/clear_cache/').read()
+				json_data = urllib.urlopen('http://apps1.ngprod.amc/clear_cache/?path=/').read()
 		except :
 			pass
 		# set num_posts_to_keep to a high number to prevent clearing of active posts
