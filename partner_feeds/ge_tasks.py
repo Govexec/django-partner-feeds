@@ -149,28 +149,11 @@ def delete_old_posts_for_partner_task(partner, num_posts_to_keep=50):
         except ObjectDoesNotExist:
             pass
 
-
     # do not delete old posts if the active feed is empty or broken
     if len(recent_posts) == 0:
         return False
 
     # recent_posts = list(Post.objects.filter(partner=partner).values_list('id', flat=True)[:num_posts_to_keep])
-
-    # exclude posts with foreign key references in ge_newsletter or ng_newsletter
-
-    ge_newsletter_posts_list = []
-    ge_newsletter_posts = NewsletterPost.objects.raw('SELECT id, ng_post_id AS post_id FROM newsletters_ge_newsletterpost WHERE ng_post_id IS NOT NULL')
-    for ge_newsletter_post in ge_newsletter_posts:
-        ge_newsletter_posts_list.append(ge_newsletter_post.post_id)
-    if len(ge_newsletter_posts_list) > 0:
-        recent_posts = recent_posts + ge_newsletter_posts_list
-
-    ng_newsletter_posts_list = []
-    ng_newsletter_posts = NewsletterPost.objects.raw('SELECT id, post_id FROM newsletters_ng_newsletterpost WHERE post_id IS NOT NULL')
-    for ng_newsletter_post in ng_newsletter_posts:
-        ng_newsletter_posts_list.append(ng_newsletter_post.post_id)
-    if len(ng_newsletter_posts_list) > 0:
-        recent_posts = recent_posts + ng_newsletter_posts_list
 
     # exclude posts with foreign key references in newsletter
     newsletter_posts = list(NewsletterPost.objects.exclude(post=None).values_list('post_id', flat=True))
