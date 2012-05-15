@@ -36,7 +36,7 @@ def update_all_partner_posts_task():
             pass
         # set num_posts_to_keep to a high number to prevent clearing of active posts
         # that are then re-entered on next update
-        delete_old_posts_tasks(num_posts_to_keep=400)
+        delete_old_posts_tasks()
 
 
 
@@ -123,7 +123,7 @@ def update_posts_for_feed_task(partner):
     # return number of added posts
     return number_of_new_posts
 
-def delete_old_posts_for_partner_task(partner, num_posts_to_keep=50):
+def delete_old_posts_for_partner_task(partner):
     """
     Deletes all posts except for the most recent `num_posts_to_keep`
     Because Django won't let us do a delete of a query with an offset, we first find
@@ -163,7 +163,7 @@ def delete_old_posts_for_partner_task(partner, num_posts_to_keep=50):
     Post.objects.filter(partner=partner).exclude(pk__in=list(set(recent_posts))).delete()
 
 
-def delete_old_posts_tasks(num_posts_to_keep=50):
+def delete_old_posts_tasks():
     """
     Fetch all partners, and for each partner,
     delete all but `num_posts_to_keep` number of posts
@@ -173,4 +173,4 @@ def delete_old_posts_tasks(num_posts_to_keep=50):
     partners = Partner.objects.all()
 
     for partner in partners:
-        delete_old_posts_for_partner_task(partner, num_posts_to_keep)
+        delete_old_posts_for_partner_task(partner)
