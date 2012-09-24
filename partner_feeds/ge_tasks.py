@@ -1,14 +1,15 @@
-
+import sys
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+from sentry.client.models import client as sentry_client
 
 def update_all_partner_posts_task():
     """
     Fetch all partners, and for each one, pass the feed_url to update_posts_for_feed
     """
-    import urllib
     from partner_feeds.models import Partner
     from datetime import datetime
     from content_utils.utils import expire_cache_by_path
-    from django.conf import settings
 
     number_of_new_posts = 0
 
@@ -27,11 +28,10 @@ def update_all_partner_posts_task():
         try:
             """ clear the NG Homepage cache by making a HTTP request to a view the clears the page cache by path """
             if not settings.DEBUG and settings.SITE_URL == 'http://www.govexec.com/':
-                json_data = urllib.urlopen('http://apps1.ngprod.amc/clear_cache/?path=/').read()
-                # clear_cache_cmd = os.path.join(settings.PROJECT_ROOT, 'support/clear_cache_for_external_sites.sh')
+                clear_cache_cmd = os.path.join(settings.PROJECT_ROOT, 'support/clear_cache_for_external_sites.sh')
                 # run the "clear_cache_for_external_sites.sh" to clear production NG and mobile site page caches
-                # import subprocess
-                # subprocess.call([clear_cache_cmd, '2>&1', '>/dev/null', '&'])
+                import subprocess
+                subprocess.call([clear_cache_cmd, '2>&1', '>/dev/null', '&'])
         except :
             pass
         # set num_posts_to_keep to a high number to prevent clearing of active posts
@@ -47,7 +47,6 @@ def update_posts_for_feed_task(partner):
     """
     from feedparser import parse
     from partner_feeds.models import Post
-    from django.core.exceptions import ObjectDoesNotExist
     import timelib, re, time
     from datetime import datetime
 
@@ -56,69 +55,76 @@ def update_posts_for_feed_task(partner):
 
     for entry in feed.entries:
         p = Post()
-
-        p.partner_id = partner.id
-        p.title = entry.title
-
-        if not p.title or len(p.title) == 0:
-            continue
-
-        if hasattr(entry, 'summary'):
-            p.subheader = entry.summary
-        else:
-            p.subheader = ''
-
+        exception_data = {'entry': entry}
         try:
-            p.author = entry.author
-        except AttributeError:
-            pass
 
-        try:
-            p.guid = entry.id
-        except AttributeError:
-            p.guid = entry.link
+            p.partner_id = partner.id
+            p.title = entry.title
 
-        # try and select feed post to see if entry exists first
-        try:
-            Post.objects.get(guid=p.guid)
-            # TODO check to see if the story has been updated
-        except ObjectDoesNotExist:
+            if not p.title or len(p.title) == 0:
+                continue
 
-            current_datetime = datetime.now()
+            if hasattr(entry, 'summary'):
+                p.subheader = entry.summary
+            else:
+                p.subheader = ''
 
-            p.url = entry.link
-
-            # try to get the date of the entry, otherwise, try the date of the feed
             try:
-                entry_date = re.sub('\|','', entry.date)
-                entry_date = timelib.strtotime(entry_date) # convert to a timestamp
-                entry_date = time.localtime(entry_date) # converts to a time.struct_time (with regards to local timezone)
-                entry_date = time.strftime("%Y-%m-%d %H:%M:%S", entry_date) # converts to mysql date format
-                p.date = entry_date
+                p.author = entry.author
             except AttributeError:
-                if hasattr(feed, 'date') and feed.date:
-                    if type(feed.date).__name__ == 'str':
-                        # Fri, 11 May 2012 05:14:37 GMT
-                        try:
-                            feed.date = datetime.strptime(feed.date, '%a, %d %b %Y %H:%M:%S %Z')
-                        except ValueError:
-                            # Fri, 27 Apr 2012 22
-                            feed.date = datetime.strptime(feed.date, '%a, %d %b %Y %H')
-                        # pass
-                    p.date = feed.date
+                pass
 
-            if not p.date or (type(p.date).__name__ == 'datetime' and p.date > current_datetime):
+            try:
+                p.guid = entry.id
+            except AttributeError:
+                p.guid = entry.link
+
+            # try and select feed post to see if entry exists first
+            try:
+                Post.objects.get(guid=p.guid)
+                # TODO check to see if the story has been updated
+            except ObjectDoesNotExist:
+
+                current_datetime = datetime.now()
+
+                p.url = entry.link
+
+                # try to get the date of the entry, otherwise, try the date of the feed
                 try:
-                    print 'entry_date: %s' % entry_date
-                    print 'entry.date: %s' % entry.date
-                    print 'feed.date: %s' % feed.date
-                except:
-                    pass
-                p.date = current_datetime
+                    entry_date = re.sub('\|','', entry.date)
+                    entry_date = timelib.strtotime(entry_date) # convert to a timestamp
+                    entry_date = time.localtime(entry_date) # converts to a time.struct_time (with regards to local timezone)
+                    entry_date = time.strftime("%Y-%m-%d %H:%M:%S", entry_date) # converts to mysql date format
+                    p.date = entry_date
+                except AttributeError:
+                    if hasattr(feed, 'date') and feed.date:
+                        if type(feed.date).__name__ == 'str':
+                            # Fri, 11 May 2012 05:14:37 GMT
+                            try:
+                                feed.date = datetime.strptime(feed.date, '%a, %d %b %Y %H:%M:%S %Z')
+                            except ValueError:
+                                # Fri, 27 Apr 2012 22
+                                feed.date = datetime.strptime(feed.date, '%a, %d %b %Y %H')
+                            # pass
+                        p.date = feed.date
 
-            p.save()
+                if not p.date or (type(p.date).__name__ == 'datetime' and p.date > current_datetime):
+                    if settings.DEBUG:
+                        try:
+                            print 'entry_date: %s' % entry_date
+                            print 'entry.date: %s' % entry.date
+                            print 'feed.date: %s' % feed.date
+                        except Exception, exc:
+                            pass
+                    p.date = current_datetime
 
-            number_of_new_posts = number_of_new_posts + 1
+                p.save()
+
+                number_of_new_posts = number_of_new_posts + 1
+
+        except Exception, exc:
+            sentry_client.create_from_exception(exc_info=sys.exc_info(), data=exception_data)
+            continue
 
     # return number of added posts
     return number_of_new_posts
@@ -132,7 +138,6 @@ def delete_old_posts_for_partner_task(partner):
     from partner_feeds.models import Post
     from newsletters.models import NewsletterPost # GE_NewsletterPost, NG_NewsletterPost
     from feedparser import parse
-    from django.core.exceptions import ObjectDoesNotExist
 
     # get active posts for partner to add to exclude list
     recent_posts = []

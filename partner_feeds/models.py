@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.db import models
-from partner_feeds import tasks
 from django.template.defaultfilters import slugify
 
 from categories.models import Category
@@ -63,16 +62,6 @@ class Partner(BaseModel):
 
 	def get_absolute_url(self):
 		return self.url
-
-	def save(self, *args, **kwargs):
-		"""
-		When saving a parter update it's related posts as an asynchronous Celery task
-		"""
-		super(Partner, self).save(*args, **kwargs)
-		if hasattr(tasks.update_posts_for_feed, "apply_async"):
-			tasks.update_posts_for_feed.apply_async([self, ])
-		else:
-			tasks.update_posts_for_feed_task(self)
 
 
 class PostManager(BaseManager):
