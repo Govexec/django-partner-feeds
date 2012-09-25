@@ -1,3 +1,4 @@
+import os
 import sys
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -47,8 +48,13 @@ def update_posts_for_feed_task(partner):
     """
     from feedparser import parse
     from partner_feeds.models import Post
-    import timelib, re, time
-    from datetime import datetime
+    from datetime import datetime, timedelta
+    from time import mktime, localtime, strftime, gmtime
+    from dateutil import tz
+
+    from_zone = tz.gettz('UTC')
+    to_zone = tz.gettz('America/New_York')
+
 
     number_of_new_posts = 0
     feed = parse(partner.feed_url)
@@ -86,49 +92,31 @@ def update_posts_for_feed_task(partner):
             except ObjectDoesNotExist:
 
                 current_datetime = datetime.now()
+                is_daylight_savings = localtime().tm_isdst
 
                 p.url = entry.link
 
-                # try to get the date of the entry, otherwise, try the date of the feed
-                try:
-                    entry_date = re.sub('\|','', entry.date)
-                    try:
-                        entry_date = timelib.strtotime(entry_date) # convert to a timestamp
-                    except ValueError, exc:
-                        # example: Mon, 24 Sep 2012 24:50:00 EST
-                        entry_date = datetime.strptime(entry_date, '%a, %d %b %Y %H:%M:%S %Z') # convert to a timestamp
-                    entry_date = time.localtime(entry_date) # converts to a time.struct_time (with regards to local timezone)
-                    entry_date = time.strftime("%Y-%m-%d %H:%M:%S", entry_date) # converts to mysql date format
-                    p.date = entry_date
-                except AttributeError:
-                    if hasattr(feed, 'date') and feed.date:
-                        if type(feed.date).__name__ == 'str':
-                            # Fri, 11 May 2012 05:14:37 GMT
-                            try:
-                                feed.date = datetime.strptime(feed.date, '%a, %d %b %Y %H:%M:%S %Z')
-                            except ValueError:
-                                # Fri, 27 Apr 2012 22
-                                feed.date = datetime.strptime(feed.date, '%a, %d %b %Y %H')
-                            # pass
-                        p.date = feed.date
-
-                if not p.date or (type(p.date).__name__ == 'datetime' and p.date > current_datetime):
-                    if settings.DEBUG:
-                        try:
-                            print 'entry_date: %s' % entry_date
-                            print 'entry.date: %s' % entry.date
-                            print 'feed.date: %s' % feed.date
-                        except Exception, exc:
-                            pass
-                    p.date = current_datetime
+                # try to get the date of the entry, otherwise, use the current date
+                if hasattr(entry, 'published_parsed'):
+                    entry.published_parsed = datetime.fromtimestamp( mktime(entry.published_parsed) ).replace(tzinfo=from_zone).astimezone(to_zone)
+                    if is_daylight_savings:
+                        entry.published_parsed = entry.published_parsed - timedelta(hours=1)
+                    entry.published_parsed = entry.published_parsed.timetuple()
+                    p.date = strftime("%Y-%m-%d %H:%M:%S", entry.published_parsed)
+                elif hasattr(entry, 'updated_parsed'):
+                    p.date = strftime("%Y-%m-%d %H:%M:%S", entry.updated_parsed)
+                else:
+                    p.date = strftime("%Y-%m-%d %H:%M:%S", current_datetime)
 
                 p.save()
 
                 number_of_new_posts = number_of_new_posts + 1
 
         except Exception, exc:
-            sentry_client.create_from_exception(exc_info=sys.exc_info(), data=exception_data)
-            continue
+            if settings.DEBUG:
+                raise
+            else:
+                sentry_client.create_from_exception(exc_info=sys.exc_info(), data=exception_data)
 
     # return number of added posts
     return number_of_new_posts
