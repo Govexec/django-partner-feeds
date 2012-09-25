@@ -105,11 +105,6 @@ def update_posts_for_feed_task(partner):
                 else:
                     p.date = strftime("%Y-%m-%d %H:%M:%S", current_datetime)
 
-                if entry.link == "http://www.nationaljournal.com/whitehouse/dual-speeches-by-romney-obama-not-really-a-duel-20120925":
-                    print entry
-                    print p.date
-                    os._exit(0)
-
                 p.save()
 
                 number_of_new_posts = number_of_new_posts + 1
