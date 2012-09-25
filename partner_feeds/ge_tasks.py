@@ -92,7 +92,11 @@ def update_posts_for_feed_task(partner):
                 # try to get the date of the entry, otherwise, try the date of the feed
                 try:
                     entry_date = re.sub('\|','', entry.date)
-                    entry_date = timelib.strtotime(entry_date) # convert to a timestamp
+                    try:
+                        entry_date = timelib.strtotime(entry_date) # convert to a timestamp
+                    except ValueError, exc:
+                        # example: Mon, 24 Sep 2012 24:50:00 EST
+                        entry_date = datetime.strptime(entry_date, '%a, %d %b %Y %H:%M:%S %Z') # convert to a timestamp
                     entry_date = time.localtime(entry_date) # converts to a time.struct_time (with regards to local timezone)
                     entry_date = time.strftime("%Y-%m-%d %H:%M:%S", entry_date) # converts to mysql date format
                     p.date = entry_date
