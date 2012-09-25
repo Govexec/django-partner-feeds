@@ -1,16 +1,20 @@
 import os
 import sys
+from dateutil import tz
+from feedparser import parse
 from django.conf import settings
+from datetime import datetime, timedelta
+from time import mktime, localtime, strftime
 from django.core.exceptions import ObjectDoesNotExist
 from sentry.client.models import client as sentry_client
+from content_utils.utils import expire_cache_by_path
 
 def update_all_partner_posts_task():
     """
     Fetch all partners, and for each one, pass the feed_url to update_posts_for_feed
     """
     from partner_feeds.models import Partner
-    from datetime import datetime
-    from content_utils.utils import expire_cache_by_path
+
 
     number_of_new_posts = 0
 
@@ -39,23 +43,23 @@ def update_all_partner_posts_task():
         # that are then re-entered on next update
         delete_old_posts_tasks()
 
-
+def utc_time_struct_to_local_time_struct(utc_time_struct):
+    from_zone = tz.gettz('UTC')
+    to_zone = tz.gettz('America/New_York')
+    is_daylight_savings = localtime().tm_isdst
+    local_time = datetime.fromtimestamp(mktime(utc_time_struct)).replace(tzinfo=from_zone).astimezone(to_zone)
+    if is_daylight_savings:
+        local_time = local_time - timedelta(hours=1)
+    return local_time.timetuple()
 
 def update_posts_for_feed_task(partner):
     """
     Load and parse the RSS or ATOM feed associated with the given feed url, and for each entry, parse out the individual
     entries and save each one as a partner_feeds.
     """
-    from feedparser import parse
     from partner_feeds.models import Post
-    from datetime import datetime, timedelta
-    from time import mktime, localtime, strftime, gmtime
-    from dateutil import tz
 
-    from_zone = tz.gettz('UTC')
-    to_zone = tz.gettz('America/New_York')
-
-
+    current_datetime = datetime.now()
     number_of_new_posts = 0
     feed = parse(partner.feed_url)
 
@@ -91,22 +95,20 @@ def update_posts_for_feed_task(partner):
                 # TODO check to see if the story has been updated
             except ObjectDoesNotExist:
 
-                current_datetime = datetime.now()
-                is_daylight_savings = localtime().tm_isdst
-
                 p.url = entry.link
 
                 # try to get the date of the entry, otherwise, use the current date
                 if hasattr(entry, 'published_parsed'):
-                    entry.published_parsed = datetime.fromtimestamp( mktime(entry.published_parsed) ).replace(tzinfo=from_zone).astimezone(to_zone)
-                    if is_daylight_savings:
-                        entry.published_parsed = entry.published_parsed - timedelta(hours=1)
-                    entry.published_parsed = entry.published_parsed.timetuple()
-                    p.date = strftime("%Y-%m-%d %H:%M:%S", entry.published_parsed)
+                    p.date = strftime("%Y-%m-%d %H:%M:%S", utc_time_struct_to_local_time_struct(entry.published_parsed))
                 elif hasattr(entry, 'updated_parsed'):
-                    p.date = strftime("%Y-%m-%d %H:%M:%S", entry.updated_parsed)
+                    p.date = strftime("%Y-%m-%d %H:%M:%S", utc_time_struct_to_local_time_struct(entry.updated_parsed))
                 else:
                     p.date = strftime("%Y-%m-%d %H:%M:%S", current_datetime)
+
+                if entry.link == "http://www.nationaljournal.com/whitehouse/dual-speeches-by-romney-obama-not-really-a-duel-20120925":
+                    print entry
+                    print p.date
+                    os._exit(0)
 
                 p.save()
 
