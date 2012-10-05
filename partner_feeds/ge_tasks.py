@@ -94,6 +94,9 @@ def update_posts_for_feed_task(partner):
                 Post.objects.get(guid=p.guid)
                 # TODO check to see if the story has been updated
             except ObjectDoesNotExist:
+                # skip if URL is too long for database field
+                if len(entry.link) > 255:
+                    continue
 
                 p.url = entry.link
 
