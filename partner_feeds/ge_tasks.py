@@ -6,7 +6,7 @@ from django.conf import settings
 from datetime import datetime, timedelta
 from time import mktime, localtime, strftime
 from django.core.exceptions import ObjectDoesNotExist
-from sentry.client.models import client as sentry_client
+from raven.contrib.django.raven_compat.models import client as sentry_client
 from content_utils.utils import expire_cache_by_path
 
 def update_all_partner_posts_task():
