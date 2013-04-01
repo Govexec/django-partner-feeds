@@ -107,6 +107,8 @@ class Post(BaseModel):
 		then it is the same post so we should use it's ID when saving.
 		"""
 
+		self.guid = self.guid[:255]
+
 		if not self.pk:
 			old_post = Post.objects.filter(guid=self.guid)
 			if len(old_post) > 0:
