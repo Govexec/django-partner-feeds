@@ -116,7 +116,7 @@ def update_posts_for_feed_task(partner):
             if settings.DEBUG:
                 raise
             else:
-                sentry_client.create_from_exception(exc_info=sys.exc_info(), data=exception_data)
+                sentry_client.capture('Exception', message=sys.exc_info(), data=exception_data)
 
     # return number of added posts
     return number_of_new_posts
