@@ -6,7 +6,7 @@ from django.conf import settings
 from datetime import datetime, timedelta
 from time import mktime, localtime, strftime
 from django.core.exceptions import ObjectDoesNotExist
-from raven.contrib.django.raven_compat.models import client as sentry_client
+from raven import Client
 from content_utils.utils import expire_cache_by_path
 
 def update_all_partner_posts_task():
@@ -116,7 +116,8 @@ def update_posts_for_feed_task(partner):
             if settings.DEBUG:
                 raise
             else:
-                sentry_client.capture('Exception', message=sys.exc_info(), data=exception_data)
+                client = Client(dsn=settings.RAVEN_CLIENT['dsn'])
+                client.captureException(exc_info=sys.exc_info(), data=exception_data)
 
     # return number of added posts
     return number_of_new_posts
