@@ -116,7 +116,7 @@ def update_posts_for_feed_task(partner):
             if settings.DEBUG:
                 raise
             else:
-                client = Client(dsn=settings.RAVEN_CLIENT['dsn'])
+                client = Client(dsn=settings.RAVEN_CONFIG['dsn'])
                 client.captureException(exc_info=sys.exc_info(), data=exception_data)
 
     # return number of added posts
