@@ -106,7 +106,7 @@ def update_posts_for_feed_task(partner):
                 elif hasattr(entry, 'updated_parsed'):
                     p.date = strftime("%Y-%m-%d %H:%M:%S", utc_time_struct_to_local_time_struct(entry.updated_parsed))
                 else:
-                    p.date = strftime("%Y-%m-%d %H:%M:%S", current_datetime)
+                    p.date = current_datetime
 
                 p.save()
 
