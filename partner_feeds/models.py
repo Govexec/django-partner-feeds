@@ -91,7 +91,7 @@ class Post(BaseModel):
 
 	url = models.URLField(verify_exists=False)
 
-	guid = models.CharField(max_length=255, unique=True)
+	guid = models.CharField(max_length=255, unique=False)
 
 	date = models.DateTimeField()
 
@@ -110,7 +110,7 @@ class Post(BaseModel):
 		self.guid = self.guid[:255]
 
 		if not self.pk:
-			old_post = Post.objects.filter(guid=self.guid)
+			old_post = Post.objects.filter(guid=self.guid, partner=self.partner)
 			if len(old_post) > 0:
 				self.pk = old_post[0].pk
 

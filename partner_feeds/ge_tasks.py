@@ -144,7 +144,7 @@ def delete_old_posts_for_partner_task(partner):
             guid = entry.link
 
         try:
-            post = Post.objects.get(guid=guid)
+            post = Post.objects.get(guid=guid, partner_id=partner.id)
             recent_posts.append(post.id)
         except ObjectDoesNotExist:
             pass
