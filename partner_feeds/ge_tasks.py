@@ -91,7 +91,9 @@ def update_posts_for_feed_task(partner):
 
             # try and select feed post to see if entry exists first
             try:
-                Post.objects.get(guid=p.guid)
+                Post.objects.get(guid=p.guid, partner_id=partner.id)
+                # print p.guid
+                # print partner.id
                 # TODO check to see if the story has been updated
             except ObjectDoesNotExist:
                 # skip if URL is too long for database field
