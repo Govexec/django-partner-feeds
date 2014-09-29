@@ -1,0 +1,63 @@
+{% extends "fake_admin/base.html" %}
+
+{% block head_extra %}
+<link href="{{ static_url}}partner_feeds/css/select-feed.css?v={{ static_version_name}}" media="all" rel="stylesheet" type="text/css">
+<script src="{{ static_url}}partner_feeds/js/select-feed.js?v={{ static_version_name}}"></script>
+{% endblock %}
+
+{% block nav %}
+    <li class="has-next"><a href="../../../">Home</a></li>
+    <li class="has-next"><a href="../../">{{ app_label|capfirst }}</a></li>
+    <li class="has-next"><a href="../">{{ model_name|capfirst }}</a></li>
+    <li>Select Feeds</li>
+{% endblock %}
+
+{% block content %}
+<section class="feeds">
+  <h1 class="page-title">Feeds</h1>
+  <div class="feeds-container">
+    <table class="feeds-data">
+      <thead>
+        <tr class="">
+          <th class="feeds-data-select feeds-select-all">{# <input type="checkbox"> #}</th>
+          <th class="feeds-data-title">Title</th>
+          <th class="feeds-data-subheader">Subheader</th>
+          <th class="feeds-data-partner">Partner</th>
+          <th class="feeds-data-author">Author</th>
+          <th class="feeds-data-date">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for post in post_list %}
+        <tr class="feeds-data-item" data-item-num="{{ loop.index }}">
+          <td class="feeds-data-select"><input type="checkbox"></td>
+          <td class="feeds-data-title">
+            <a href="{{ post.url }}" target="_blank">
+              {{ post.title|striptags|safe }}
+            </a>
+          </td>
+          <td class="feeds-data-subheader">{{ post.subheader|striptags|safe }}</td>
+          <td class="feeds-data-partner">{{ post.partner }}</td>
+          <td class="feeds-data-author">{{ post.author|striptags|safe }}</td>
+          <td class="feeds-data-date">{{ post.date|safe }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6">There are no posts for this feed</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <aside class="feeds-selected-container">
+      <h2 class="feeds-selected-title"><div>Selected Feeds</div></h2>
+      <ol class="feeds-selected"></ol>
+    </aside>
+  </div>
+</section>
+{% endblock %}
+
+{% block footer %}
+<ul>
+  <li>
+    <a class="button default feeds-select-button" href="" onclick="return false;">Select items</a>
+  </li>
+</ul>
+{% endblock %}

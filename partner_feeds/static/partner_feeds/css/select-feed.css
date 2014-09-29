@@ -1,0 +1,183 @@
+.feeds
+{
+    margin: auto 20px;
+    width: 920px;
+}
+
+.page-title
+{
+    font-size: 20px;
+    line-height: 24px;
+}
+
+.feeds-container
+{
+    position: relative;
+}
+
+.feeds-selected-container
+{
+    display: none;
+
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0 20px;
+
+    color: #575757;
+    overflow: auto;
+}
+
+.feeds-data
+{
+    table-layout: fixed;
+    margin-bottom: 40px;
+    border: 1px solid #ccc;
+    border-collapse: collapse;
+    -webkit-border-radius: 3px;
+       -moz-border-radius: 3px;
+        -ms-border-radius: 3px;
+         -o-border-radius: 3px;
+            border-radius: 3px;
+    width: 920px;
+    color: #444444
+}
+
+.feeds-has-selection .feeds-selected-container
+{
+    display: block;
+    width: 200px;
+}
+
+.feeds-has-selection .feeds-data
+{
+    width: 680px;
+}
+
+.feeds-data thead
+{
+    color: #888;
+}
+
+.feeds-data thead input
+{
+    margin: 0;
+}
+.feeds-data thead tr
+{
+    height: 25px;
+}
+.feeds-data thead th
+{
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: normal;
+    line-height: 12px;
+    background-image: #eee;
+    background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #eeeeee), color-stop(100%, #e0e0e0));
+    background-image: -webkit-linear-gradient(#eeeeee,#e0e0e0);
+    background-image:    -moz-linear-gradient(#eeeeee,#e0e0e0);
+    background-image:      -o-linear-gradient(#eeeeee,#e0e0e0);
+    background-image:         linear-gradient(#eeeeee,#e0e0e0);
+}
+
+.feeds-data tbody .feeds-data-item-selected
+{
+    background-color: #efefef;
+}
+
+.feeds-data tbody td
+{
+    border: 1px solid #e0e0e0;
+    padding: 10px;
+    font-size: 12px;
+    max-width: 200px;
+}
+
+.feeds-data tbody a
+{
+    font-weight: bold;
+    color: #309BBF;
+}
+.feeds-data tbody a:hover
+{
+    color: #444;
+    text-decoration: none;
+}
+
+.feeds-data tbody .feeds-data-item-selected td
+{
+    border: 1px solid #d0d0d0;
+}
+
+.feeds-data .feeds-data-select
+{
+    text-align: center;
+    width: 40px;
+}
+
+.feeds-data .feeds-data-title,
+.feeds-data .feeds-data-subheader
+{
+    width: 275px;
+}
+
+.feeds-has-selection .feeds-data .feeds-data-title,
+.feeds-has-selection .feeds-data .feeds-data-subheader
+{
+    width: 200px;
+}
+
+.feeds-selected-title
+{
+    margin: 0 0 10px 0;
+    border-bottom: 1px solid #ddd;
+    font-size: 18px;
+    line-height: 20px;
+}
+
+.feeds-selected-title div
+{
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+.feeds-selected-title,
+.feeds-selected-item
+{
+    margin-left: 10px;
+}
+.feeds-selected
+{
+    list-style-position: inside;
+    padding-left: 0px;
+}
+.feeds-selected-item
+{
+    position: relative;
+    padding-top: 15px;
+    padding-right: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+}
+.feeds-selected-item:last-child
+{
+    border-bottom: none;
+}
+.feeds-selected-remove
+{
+    position: absolute;
+    display: block;
+    top: 5px;
+    right: 0;
+    width: 20px;
+    height: 20px;
+
+    cursor: pointer;
+    background-image: url(/static/grappelli/images/icons-s96d5c23000.png);
+    background-position: 0 -2871px;
+}
+.feeds-selected-remove:hover
+{
+    background-position: 0 -2387px;
+}
