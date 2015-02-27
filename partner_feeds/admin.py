@@ -1,7 +1,6 @@
+from django.conf import settings
 from django.conf.urls import patterns
 from django.contrib import admin
-
-from settings import STATIC_URL
 
 from partner_feeds.models import Partner, Post, PartnerGroup
 from partner_feeds.views import PostListView
@@ -10,7 +9,7 @@ class PartnerAdmin(admin.ModelAdmin):
     list_display = ['name', 'display_logo', 'feed_url', 'date_feed_updated',]
 
     def display_logo(self, instance):
-        return '<img src="{0}{1}" />'.format(STATIC_URL, instance.logo )
+        return '<img src="{0}{1}" />'.format(settings.STATIC_URL, instance.logo )
     display_logo.allow_tags = True
     display_logo.short_description = 'Logo'
 
