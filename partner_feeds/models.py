@@ -89,7 +89,7 @@ class Post(BaseModel):
 	
 	author = models.CharField(max_length=255, default="")
 
-	url = models.URLField(verify_exists=False)
+	url = models.URLField()
 
 	guid = models.CharField(max_length=255, unique=False)
 
