@@ -1,15 +1,12 @@
 from datetime import datetime, timedelta
 
-from coffin.shortcuts import render_to_response
-from coffin.template import RequestContext
-from coffin.template.response import TemplateResponse
 from django.conf import settings
 from django.views.generic import ListView
 
 from partner_feeds.models import Post
 
+
 class PostListView(ListView):
-    response_class = TemplateResponse
 
     template_name = 'partner_feeds/select-feed.html'
     context_object_name = 'post_list'
