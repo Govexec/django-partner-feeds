@@ -1,8 +1,9 @@
 {% extends "fake_admin/base.html" %}
+{% load staticfiles %}
 
 {% block head_extra %}
-<link href="{{ static_url}}partner_feeds/css/select-feed.css?v={{ static_version_name}}" media="all" rel="stylesheet" type="text/css">
-<script src="{{ static_url}}partner_feeds/js/select-feed.js?v={{ static_version_name}}"></script>
+<link href="{% static 'partner_feeds/css/select-feed.css' %}?v={{ static_version_name}}" media="all" rel="stylesheet" type="text/css">
+<script src="{% static 'partner_feeds/js/select-feed.js' %}?v={{ static_version_name}}"></script>
 {% endblock %}
 
 {% block nav %}
@@ -29,7 +30,7 @@
       </thead>
       <tbody>
       {% for post in post_list %}
-        <tr class="feeds-data-item" data-item-num="{{ loop.index }}">
+        <tr class="feeds-data-item" data-item-num="{{ forloop.counter }}">
           <td class="feeds-data-select"><input type="checkbox"></td>
           <td class="feeds-data-title">
             <a href="{{ post.url }}" target="_blank">
@@ -41,7 +42,7 @@
           <td class="feeds-data-author">{{ post.author|striptags|safe }}</td>
           <td class="feeds-data-date">{{ post.date|safe }}</td>
         </tr>
-      {% else %}
+      {% empty %}
         <tr><td colspan="6">There are no posts for this feed</td></tr>
       {% endfor %}
       </tbody>
