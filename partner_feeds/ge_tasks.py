@@ -103,9 +103,9 @@ def update_posts_for_feed_task(partner):
                 p.url = entry.link
 
                 # try to get the date of the entry, otherwise, use the current date
-                if hasattr(entry, 'published_parsed') and entry.published_parsed is not None:
+                if getattr(entry, 'published_parsed', None):
                     p.date = strftime("%Y-%m-%d %H:%M:%S", utc_time_struct_to_local_time_struct(entry.published_parsed))
-                elif hasattr(entry, 'updated_parsed') and entry.updated_parsed is not None:
+                elif getattr(entry, 'updated_parsed', None):
                     p.date = strftime("%Y-%m-%d %H:%M:%S", utc_time_struct_to_local_time_struct(entry.updated_parsed))
                 else:
                     p.date = current_datetime
