@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import sys
@@ -16,10 +17,15 @@ from newsletters.models import NewsletterPost # GE_NewsletterPost, NG_Newsletter
 from partner_feeds.models import Partner, Post
 
 
+logger = logging.getLogger(__name__)
+
+
 def update_all_partner_posts_task():
     """
     Fetch all partners, and for each one, pass the feed_url to update_posts_for_feed
     """
+    logger.debug("Running update_all_partner_posts_task.")
+
     number_of_new_posts = 0
 
     partners = Partner.objects.all()
@@ -32,6 +38,7 @@ def update_all_partner_posts_task():
 
     # clear home and early bird page cache and delete old posts if there is a change
     if number_of_new_posts > 0:
+        logger.debug("Clearing site cache")
         expire_cache_by_path('/', is_view=False)
         expire_cache_by_path('/news/earlybird/', is_view=False)
         try:
@@ -45,6 +52,7 @@ def update_all_partner_posts_task():
         # set num_posts_to_keep to a high number to prevent clearing of active posts
         # that are then re-entered on next update
         delete_old_posts_tasks()
+    logger.debug("Finished running update_all_partner_posts_task")
 
 
 def utc_time_struct_to_local_time_struct(utc_time_struct):
@@ -62,6 +70,8 @@ def update_posts_for_feed_task(partner):
     Load and parse the RSS or ATOM feed associated with the given feed url, and for each entry, parse out the individual
     entries and save each one as a partner_feeds.
     """
+    logger.debug("Updating posts for partner feed: {} - {}.".format(partner, partner.pk))
+
     current_datetime = datetime.now()
     number_of_new_posts = 0
     feed = parse(partner.feed_url)
@@ -95,12 +105,16 @@ def update_posts_for_feed_task(partner):
             # try and select feed post to see if entry exists first
             try:
                 Post.objects.get(guid=p.guid, partner_id=partner.id)
+                logger.debug("Prexisting partner_feed.Post with partner id: {}, guid: {}.".format(partner.id, p.guid))
                 # print p.guid
                 # print partner.id
                 # TODO check to see if the story has been updated
             except ObjectDoesNotExist:
+                logger.debug("partner_feed.Post does not exist with partner id: {}, guid: {}".format(partner.id, p.guid))
                 # skip if URL is too long for database field
-                if len(entry.link) > 500:
+                max_length = 500
+                if len(entry.link) > max_length:
+                    logger.debug("Entry link is longer than {}. Skipping entry link {}.".format(max_length, entry.link))
                     continue
 
                 p.url = entry.link
@@ -113,16 +127,15 @@ def update_posts_for_feed_task(partner):
                 else:
                     p.date = current_datetime
 
+                logger.debug("Saving partner_feed.Post with partner id: {}, guid: {}".format(partner.id, p.guid))
                 p.save()
+                logger.debug("Finished saving partner_feed.Post with partner id: {}, guid: {}".format(partner.id, p.guid))
 
                 number_of_new_posts = number_of_new_posts + 1
 
         except Exception:
-            if settings.DEBUG:
-                raise
-            else:
-                client = Client(dsn=settings.RAVEN_CONFIG['dsn'])
-                client.captureException(exc_info=sys.exc_info(), data=exception_data)
+            client = Client(dsn=settings.RAVEN_CONFIG['dsn'])
+            client.captureException(exc_info=sys.exc_info(), data=exception_data)
 
     # return number of added posts
     return number_of_new_posts
@@ -134,34 +147,40 @@ def delete_old_posts_for_partner_task(partner):
     Because Django won't let us do a delete of a query with an offset, we first find
     the IDs of the posts that we want to keep and then exclude them from the delete.
     """
+    logger.debug("Finding posts to delete for partner {}".format(partner))
 
     # get active posts for partner to add to exclude list
-    recent_posts = []
     feed = parse(partner.feed_url)
+    guids = set()
     for entry in feed.entries:
         try:
             guid = entry.id
         except AttributeError:
             guid = entry.link
+        guids.add(guid)
 
-        try:
-            post = Post.objects.get(guid=guid, partner_id=partner.id)
-            recent_posts.append(post.id)
-        except ObjectDoesNotExist:
-            pass
+    recent_posts = set(
+        Post.objects
+        .filter(partner_id=partner.id, guid__in=guids)
+        .values_list("pk", flat=True)
+    )
 
     # do not delete old posts if the active feed is empty or broken
-    if len(recent_posts) == 0:
+    if not recent_posts:
+        logger.debug("No posts to delete for partner {}".format(partner))
         return False
 
-    # recent_posts = list(Post.objects.filter(partner=partner).values_list('id', flat=True)[:num_posts_to_keep])
-
     # exclude posts with foreign key references in newsletter
-    newsletter_posts = list(NewsletterPost.objects.exclude(post=None).values_list('post_id', flat=True))
-    if len(newsletter_posts) > 0:
-        recent_posts = recent_posts + newsletter_posts
+    newsletter_posts = set(
+        NewsletterPost.objects
+        .exclude(ng_post=None)
+        .values_list('ng_post_id', flat=True)
+        .distinct()
+    )
+    recent_posts = recent_posts | newsletter_posts
 
-    Post.objects.filter(partner=partner).exclude(pk__in=list(set(recent_posts))).delete()
+    logger.debug("Deleting posts for partner {}, excluding {} posts".format(partner, len(recent_posts)))
+    Post.objects.filter(partner=partner).exclude(pk__in=recent_posts).delete()
 
 
 def delete_old_posts_tasks():
@@ -169,6 +188,8 @@ def delete_old_posts_tasks():
     Fetch all partners, and for each partner,
     delete all but `num_posts_to_keep` number of posts
     """
+    logger.debug("Deleting old posts")
+
     partners = Partner.objects.all()
 
     for partner in partners:
