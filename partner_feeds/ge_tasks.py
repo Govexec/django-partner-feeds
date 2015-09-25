@@ -1,21 +1,25 @@
 import os
+import subprocess
 import sys
+from datetime import datetime, timedelta
 from dateutil import tz
 from feedparser import parse
-from django.conf import settings
-from datetime import datetime, timedelta
 from time import mktime, localtime, strftime
+
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from raven import Client
+
 from content_utils.utils import expire_cache_by_path
+from raven import Client
+
+from newsletters.models import NewsletterPost # GE_NewsletterPost, NG_NewsletterPost
+from partner_feeds.models import Partner, Post
+
 
 def update_all_partner_posts_task():
     """
     Fetch all partners, and for each one, pass the feed_url to update_posts_for_feed
     """
-    from partner_feeds.models import Partner
-
-
     number_of_new_posts = 0
 
     partners = Partner.objects.all()
@@ -35,13 +39,13 @@ def update_all_partner_posts_task():
             if not settings.DEBUG and settings.SITE_URL == 'http://www.govexec.com':
                 clear_cache_cmd = os.path.join(settings.PROJECT_ROOT, 'support/clear_cache_for_external_sites.sh')
                 # run the "clear_cache_for_external_sites.sh" to clear production NG and mobile site page caches
-                import subprocess
                 subprocess.call([clear_cache_cmd, '2>&1', '>/dev/null', '&'])
-        except :
+        except:
             pass
         # set num_posts_to_keep to a high number to prevent clearing of active posts
         # that are then re-entered on next update
         delete_old_posts_tasks()
+
 
 def utc_time_struct_to_local_time_struct(utc_time_struct):
     from_zone = tz.gettz('UTC')
@@ -52,13 +56,12 @@ def utc_time_struct_to_local_time_struct(utc_time_struct):
         local_time = local_time - timedelta(hours=1)
     return local_time.timetuple()
 
+
 def update_posts_for_feed_task(partner):
     """
     Load and parse the RSS or ATOM feed associated with the given feed url, and for each entry, parse out the individual
     entries and save each one as a partner_feeds.
     """
-    from partner_feeds.models import Post
-
     current_datetime = datetime.now()
     number_of_new_posts = 0
     feed = parse(partner.feed_url)
@@ -114,7 +117,7 @@ def update_posts_for_feed_task(partner):
 
                 number_of_new_posts = number_of_new_posts + 1
 
-        except Exception, exc:
+        except Exception:
             if settings.DEBUG:
                 raise
             else:
@@ -124,15 +127,13 @@ def update_posts_for_feed_task(partner):
     # return number of added posts
     return number_of_new_posts
 
+
 def delete_old_posts_for_partner_task(partner):
     """
     Deletes all posts except for the most recent `num_posts_to_keep`
     Because Django won't let us do a delete of a query with an offset, we first find
     the IDs of the posts that we want to keep and then exclude them from the delete.
     """
-    from partner_feeds.models import Post
-    from newsletters.models import NewsletterPost # GE_NewsletterPost, NG_NewsletterPost
-    from feedparser import parse
 
     # get active posts for partner to add to exclude list
     recent_posts = []
@@ -168,8 +169,6 @@ def delete_old_posts_tasks():
     Fetch all partners, and for each partner,
     delete all but `num_posts_to_keep` number of posts
     """
-    from partner_feeds.models import Partner
-
     partners = Partner.objects.all()
 
     for partner in partners:
