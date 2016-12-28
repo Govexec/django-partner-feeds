@@ -9,7 +9,7 @@ class PartnerAdmin(admin.ModelAdmin):
     list_display = ['name', 'display_logo', 'feed_url', 'date_feed_updated',]
 
     def display_logo(self, instance):
-        return '<img src="{0}{1}" />'.format(settings.STATIC_URL, instance.logo )
+        return '<img src="{0}{1}" />'.format(settings.NON_CDN_STATIC_URL, instance.logo)
     display_logo.allow_tags = True
     display_logo.short_description = 'Logo'
 
