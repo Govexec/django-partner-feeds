@@ -13,7 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from content_utils.utils import expire_cache_by_path
 from raven import Client
 
-from newsletters.models import NewsletterPost # GE_NewsletterPost, NG_NewsletterPost
+from newsletters.models import NewsletterPost  # GE_NewsletterPost, NG_NewsletterPost
 from partner_feeds.models import Partner, Post
 
 
@@ -70,7 +70,7 @@ def update_posts_for_feed_task(partner):
     Load and parse the RSS or ATOM feed associated with the given feed url, and for each entry, parse out the individual
     entries and save each one as a partner_feeds.
     """
-    logger.debug("Updating posts for partner feed: {} - {}.".format(partner, partner.pk))
+    logger.debug(u"Updating posts for partner feed: {} - {}.".format(partner, partner.pk))
 
     current_datetime = datetime.now()
     number_of_new_posts = 0
@@ -105,16 +105,14 @@ def update_posts_for_feed_task(partner):
             # try and select feed post to see if entry exists first
             try:
                 Post.objects.get(guid=p.guid, partner_id=partner.id)
-                logger.debug("Prexisting partner_feed.Post with partner id: {}, guid: {}.".format(partner.id, p.guid))
-                # print p.guid
-                # print partner.id
+                logger.debug(u"Prexisting partner_feed.Post with partner id: {}, guid: {}.".format(partner.id, p.guid))
                 # TODO check to see if the story has been updated
             except ObjectDoesNotExist:
-                logger.debug("partner_feed.Post does not exist with partner id: {}, guid: {}".format(partner.id, p.guid))
+                logger.debug(u"partner_feed.Post does not exist with partner id: {}, guid: {}".format(partner.id, p.guid))
                 # skip if URL is too long for database field
                 max_length = 500
                 if len(entry.link) > max_length:
-                    logger.debug("Entry link is longer than {}. Skipping entry link {}.".format(max_length, entry.link))
+                    logger.debug(u"Entry link is longer than {}. Skipping entry link {}.".format(max_length, entry.link))
                     continue
 
                 p.url = entry.link
@@ -127,9 +125,9 @@ def update_posts_for_feed_task(partner):
                 else:
                     p.date = current_datetime
 
-                logger.debug("Saving partner_feed.Post with partner id: {}, guid: {}".format(partner.id, p.guid))
+                logger.debug(u"Saving partner_feed.Post with partner id: {}, guid: {}".format(partner.id, p.guid))
                 p.save()
-                logger.debug("Finished saving partner_feed.Post with partner id: {}, guid: {}".format(partner.id, p.guid))
+                logger.debug(u"Finished saving partner_feed.Post with partner id: {}, guid: {}".format(partner.id, p.guid))
 
                 number_of_new_posts = number_of_new_posts + 1
 
@@ -147,7 +145,7 @@ def delete_old_posts_for_partner_task(partner):
     Because Django won't let us do a delete of a query with an offset, we first find
     the IDs of the posts that we want to keep and then exclude them from the delete.
     """
-    logger.debug("Finding posts to delete for partner {}".format(partner))
+    logger.debug(u"Finding posts to delete for partner {}".format(partner))
 
     # get active posts for partner to add to exclude list
     feed = parse(partner.feed_url)
@@ -167,7 +165,7 @@ def delete_old_posts_for_partner_task(partner):
 
     # do not delete old posts if the active feed is empty or broken
     if not recent_posts:
-        logger.debug("No posts to delete for partner {}".format(partner))
+        logger.debug(u"No posts to delete for partner {}".format(partner))
         return False
 
     # exclude posts with foreign key references in newsletter
@@ -179,7 +177,7 @@ def delete_old_posts_for_partner_task(partner):
     )
     recent_posts = recent_posts | newsletter_posts
 
-    logger.debug("Deleting posts for partner {}, excluding {} posts".format(partner, len(recent_posts)))
+    logger.debug(u"Deleting posts for partner {}, excluding {} posts".format(partner, len(recent_posts)))
     Post.objects.filter(partner=partner).exclude(pk__in=recent_posts).delete()
 
 
