@@ -43,7 +43,7 @@ def update_all_partner_posts_task():
         expire_cache_by_path('/news/earlybird/', is_view=False)
         try:
             """ clear the NG Homepage cache by making a HTTP request to a view the clears the page cache by path """
-            if not settings.DEBUG and settings.SITE_URL == 'http://www.govexec.com':
+            if not settings.DEBUG and settings.SITE_URL == 'https://www.govexec.com':  # TODO: stringly typed!!!
                 clear_cache_cmd = os.path.join(settings.PROJECT_ROOT, 'support/clear_cache_for_external_sites.sh')
                 # run the "clear_cache_for_external_sites.sh" to clear production NG and mobile site page caches
                 subprocess.call([clear_cache_cmd, '2>&1', '>/dev/null', '&'])
