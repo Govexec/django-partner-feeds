@@ -9,10 +9,9 @@ from time import mktime, localtime, strftime
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from raven.contrib.django.raven_compat.models import client as raven_client
 
 from content_utils.utils import expire_cache_by_path
-from raven import Client
-
 from newsletters.models import NewsletterPost  # GE_NewsletterPost, NG_NewsletterPost
 from partner_feeds.models import Partner, Post
 
@@ -132,8 +131,7 @@ def update_posts_for_feed_task(partner):
                 number_of_new_posts = number_of_new_posts + 1
 
         except Exception:
-            client = Client(dsn=settings.RAVEN_CONFIG['dsn'])
-            client.captureException(exc_info=sys.exc_info(), data=exception_data)
+            raven_client.captureException(exc_info=sys.exc_info(), data=exception_data)
 
     # return number of added posts
     return number_of_new_posts
